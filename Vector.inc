@@ -23,7 +23,7 @@ Vector_free_t TYPEDEF PROTO STDCALL : ptr Vector
 VectorVTable STRUCT
     get_at DWORD ?
     get_data DWORD ?
-    ;empty DWORD ?
+    empty DWORD ?
     get_size DWORD ?
     ;max_size DWORD ?
     ;reserve DWORD ?
@@ -41,7 +41,13 @@ VectorVTable ENDS
 ;;         PUBLIC FUNCTIONS            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+Vector_New_Empty PROTO
+
 Vector_New_Filled PROTO dwSize: DWORD, dwData: DWORD
+
+Vector_New_Copy PROTO pVec: ptr Vector
+
+Vector_New_Move PROTO pVec: ptr Vector
 
 Vector_Free PROTO pThis: ptr Vector
 

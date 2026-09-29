@@ -32,7 +32,7 @@ _Vector__calculate_growth PROC uses ebx ecx edx, pThis: ptr Vector, dwNewSize: D
     
     mov ecx, dwNewSize
     cmp eax, ecx
-    .IF CARRY?                         ; unsigned eax < dwNewSize
+    .IF CARRY?                         ; unsigned (eax < dwNewSize)
         mov eax, ecx                   ; insufficient -> dwNewSize
     .ENDIF
     
@@ -84,6 +84,22 @@ _Vector__fill PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
     assume ebx:nothing
     ret
 _Vector__fill ENDP
+
+_Vector__constructor_base PROC uses ebx
+    invoke crt_malloc, sizeof Vector
+    .IF eax == 0
+        ret
+    .ENDIF
+    mov ebx, eax
+    assume ebx: ptr Vector
+    mov [ebx].pVTable, offset Vector_vt
+    mov [ebx].pData, 0
+    mov [ebx].dwSize, 0
+    mov [ebx].dwCapacity, 0
+    mov eax, ebx
+    assume ebx:nothing
+    ret 
+_Vector__constructor_base ENDP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public methods with private functions  ;;
@@ -175,18 +191,39 @@ Vector__free ENDP
 ;; Public methods with public functions   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PUBLIC Vector_New_Filled
-Vector_New_Filled PROC uses ebx, dwSize: DWORD, dwData: DWORD
-    invoke crt_malloc, sizeof Vector
+_Vector_New_constructor_base_start MACRO 
+    invoke _Vector__constructor_base
     .IF eax == 0
         ret
     .ENDIF
     mov ebx, eax
     assume ebx: ptr Vector
-    mov [ebx].pVTable, offset Vector_vt
-    mov [ebx].pData, 0
-    mov [ebx].dwSize, 0
-    mov [ebx].dwCapacity, 0
+ENDM
+
+_Vector_New_constructor_base_end MACRO
+    mov eax, ebx
+    assume ebx:nothing
+ENDM
+
+
+PUBLIC Vector_New_Empty
+Vector_New_Empty PROC
+    _Vector_New_constructor_base_start
+    
+    invoke crt_malloc, 0
+    .IF eax == 0
+        invoke crt_free, ebx
+        ret
+    .ENDIF
+    mov [ebx].pData, eax
+    
+    _Vector_New_constructor_base_end
+    ret 
+Vector_New_Empty ENDP
+
+PUBLIC Vector_New_Filled
+Vector_New_Filled PROC uses ebx, dwSize: DWORD, dwData: DWORD
+    _Vector_New_constructor_base_start
     
     mov eax, dwSize
     imul eax, sizeof DWORD
@@ -203,10 +240,65 @@ Vector_New_Filled PROC uses ebx, dwSize: DWORD, dwData: DWORD
     
     invoke _Vector__fill, ebx, dwData
     
-    mov eax, ebx
-    assume ebx:nothing
+    _Vector_New_constructor_base_end
     ret 
 Vector_New_Filled ENDP
+
+Vector_New_Copy PROC uses ebx ecx edx edi esi, pVec: ptr Vector
+    _Vector_New_constructor_base_start
+    
+    mov edx, pVec
+    assume edx: ptr Vector
+    mov ecx, [edx].dwSize
+    imul ecx, sizeof DWORD
+    
+    invoke crt_malloc, ecx
+    mov edx, pVec
+    .IF eax == 0
+        invoke crt_free, ebx
+        ret
+    .ENDIF
+    mov [ebx].pData, eax
+    mov eax, [edx].dwSize
+    mov [ebx].dwSize, eax
+    mov [ebx].dwCapacity, eax
+    
+    mov ecx, [edx].dwSize
+    mov edi, [ebx].pData
+    mov esi, [edx].pData
+    
+    .IF ecx != 0
+        .REPEAT
+            dec ecx
+            mov eax, [esi + ecx * (sizeof DWORD)]
+            mov DWORD ptr [edi + ecx * (sizeof DWORD)], eax
+        .UNTIL ecx == 0
+    .ENDIF
+    
+    assume edx:nothing
+    _Vector_New_constructor_base_end
+    ret 
+Vector_New_Copy ENDP
+
+Vector_New_Move PROC pVec: ptr Vector
+    _Vector_New_constructor_base_start
+    
+    mov edx, pVec
+    assume edx: ptr Vector
+    mov eax, [edx].pData
+    mov [ebx].pData, eax
+    mov [edx].pData, 0
+    mov eax, [edx].dwSize
+    mov [ebx].dwSize, eax
+    mov [edx].dwSize, 0
+    mov eax, [edx].dwCapacity
+    mov [ebx].dwCapacity, eax
+    mov [edx].dwCapacity, 0
+    
+    _Vector_New_constructor_base_end
+    assume edx:nothing
+    ret 
+Vector_New_Move ENDP
 
 PUBLIC Vector_Free
 Vector_Free PROC uses ebx, pThis: ptr Vector
