@@ -7,7 +7,7 @@ include .\Vector.inc
 
 .data
     PUBLIC Vector_vt
-    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector_capacity, Vector__push_back, Vector__free>
+    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector_capacity, Vector__push_back, Vector__is_eq, Vector__free>
     VECTOR_MAX_SIZE DWORD 0FFFFFFFFh
 
 .code
@@ -137,6 +137,15 @@ Vector__get_size PROC pThis: ptr Vector
     ret
 Vector__get_size ENDP
 
+Vector__empty PROC pThis: ptr Vector
+    invoke Vector__get_size, pThis
+    ; Convert to bool: 0 if 0, 1 elsewhere
+    .IF eax != 0
+        mov eax, 1
+    .ENDIF
+    ret
+Vector__empty ENDP
+
 Vector_capacity PROC pThis: ptr Vector
     mov eax, pThis
     assume eax: ptr Vector
@@ -177,10 +186,49 @@ Vector__push_back PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
     ret
 Vector__push_back ENDP
 
+Vector__is_eq PROC uses ebx ecx edx esi edi, pThis: ptr Vector, pVec: ptr Vector
+    mov ebx, pThis
+    assume ebx: ptr Vector
+    mov edx, pVec
+    assume edx: ptr Vector
+    
+    mov ecx, [ebx].dwSize
+    .IF [edx].dwSize != ecx
+        mov eax, 0
+        ret
+    .ELSEIF ecx == 0
+        mov eax, 1
+        ret
+    .ELSE
+        mov ebx, [ebx].pData
+        mov edx, [edx].pData
+        assume ebx: DWORD
+        assume edx: DWORD
+        .REPEAT
+            dec ecx
+            mov esi, [ebx + ecx * (sizeof DWORD)]
+            mov edi, [edx + ecx * (sizeof DWORD)]
+            .IF esi != edi
+                mov eax, 0
+                ret
+            .ENDIF
+        .UNTIL ecx == 0
+    .ENDIF
+    
+    mov eax, 1              
+    
+    assume ebx:nothing
+    assume edx:nothing
+    ret
+Vector__is_eq ENDP
+
 Vector__free PROC uses ebx, pThis: ptr Vector
     mov ebx, pThis
     assume ebx: ptr Vector
     mov ebx, [ebx].pData
+    .IF ebx == 0
+        ret
+    .ENDIF
     assume ebx:nothing
     invoke crt_free, ebx
     ret
@@ -280,7 +328,7 @@ Vector_New_Copy PROC uses ebx ecx edx edi esi, pVec: ptr Vector
     ret 
 Vector_New_Copy ENDP
 
-Vector_New_Move PROC pVec: ptr Vector
+Vector_New_Move PROC uses ebx edx, pVec: ptr Vector
     _Vector_New_constructor_base_start
     
     mov edx, pVec

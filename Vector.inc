@@ -13,19 +13,20 @@ Vector STRUCT
     pVTable DWORD ? 
 Vector ENDS
 
-Vector_get_at_t TYPEDEF PROTO STDCALL : ptr Vector, :DWORD
+Vector_get_at_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_get_data_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_get_size_t TYPEDEF PROTO STDCALL : ptr Vector
+Vector_empty_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_capacity_t TYPEDEF PROTO STDCALL : ptr Vector
-Vector_push_back_t TYPEDEF PROTO STDCALL : ptr Vector, :DWORD
+Vector_push_back_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
+Vector_is_eq_t TYPEDEF PROTO STDCALL : ptr Vector, : ptr Vector
 Vector_free_t TYPEDEF PROTO STDCALL : ptr Vector
 
 VectorVTable STRUCT
     get_at DWORD ?
     get_data DWORD ?
-    empty DWORD ?
     get_size DWORD ?
-    ;max_size DWORD ?
+    empty DWORD ?
     ;reserve DWORD ?
     capacity DWORD ?
     ;clear DWORD ?
@@ -33,7 +34,7 @@ VectorVTable STRUCT
     ;erase DWORD ?
     push_back DWORD ?
     ;resize DWORD ?
-    ;is_eq DWORD ?
+    is_eq DWORD ?
     free DWORD ?
 VectorVTable ENDS
 
