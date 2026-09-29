@@ -7,7 +7,7 @@ include .\Vector.inc
 
 .data
     PUBLIC Vector_vt
-    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector_capacity, Vector__push_back, Vector__is_eq, Vector__free>
+    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector__reserve, Vector_capacity, Vector__push_back, Vector__is_eq, Vector__free>
     VECTOR_MAX_SIZE DWORD 0FFFFFFFFh
 
 .code
@@ -27,7 +27,7 @@ _Vector__calculate_growth PROC uses ebx ecx edx, pThis: ptr Vector, dwNewSize: D
     .IF CARRY?
         mov eax, ecx                   ; overflow -> MAX_SIZE
     .ELSE
-        mov eax, edx                   ; eax = geometric
+        mov eax, edx                   ; eax = _Geometric
     .ENDIF
     
     mov ecx, dwNewSize
@@ -145,6 +145,28 @@ Vector__empty PROC pThis: ptr Vector
     .ENDIF
     ret
 Vector__empty ENDP
+
+Vector__reserve PROC uses ebx, pThis: ptr Vector, dwNewCapacity: DWORD
+    mov ebx, pThis
+    assume ebx: ptr Vector
+    .IF ebx == 0
+        mov eax, dwNewCapacity
+        imul eax, sizeof DWORD
+        invoke crt_malloc, eax
+        .IF eax == 0
+            ret
+        .ENDIF
+        mov [ebx].pData, eax
+        mov eax, dwNewCapacity
+        mov [ebx].dwSize, eax
+        mov [ebx].dwCapacity, eax
+    .ELSE
+        invoke _Vector__max_reallocate, pThis, dwNewCapacity
+    .ENDIF
+    
+    assume ebx:nothing
+    ret
+Vector__reserve ENDP
 
 Vector_capacity PROC pThis: ptr Vector
     mov eax, pThis

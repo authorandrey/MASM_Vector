@@ -17,6 +17,7 @@ Vector_get_at_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_get_data_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_get_size_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_empty_t TYPEDEF PROTO STDCALL : ptr Vector
+Vector_reserve_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_capacity_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_push_back_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_is_eq_t TYPEDEF PROTO STDCALL : ptr Vector, : ptr Vector
@@ -27,7 +28,7 @@ VectorVTable STRUCT
     get_data DWORD ?
     get_size DWORD ?
     empty DWORD ?
-    ;reserve DWORD ?
+    reserve DWORD ?
     capacity DWORD ?
     ;clear DWORD ?
     ;insert DWORD ?
