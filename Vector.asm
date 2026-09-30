@@ -7,7 +7,7 @@ include .\Vector.inc
 
 .data
     PUBLIC Vector_vt
-    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector__reserve, Vector_capacity, Vector__push_back, Vector__is_eq, Vector__free>
+    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector__resize, Vector__reserve, Vector__capacity, Vector__clear, Vector__push_back, Vector__is_eq>
     VECTOR_MAX_SIZE DWORD 0FFFFFFFFh
 
 .code
@@ -146,29 +146,42 @@ Vector__empty PROC pThis: ptr Vector
     ret
 Vector__empty ENDP
 
-Vector__reserve PROC uses ebx, pThis: ptr Vector, dwNewCapacity: DWORD
+Vector__resize PROC uses ebx ecx, pThis: ptr Vector, dwSize: DWORD
     mov ebx, pThis
     assume ebx: ptr Vector
+    mov ecx, dwSize
     .IF ebx == 0
-        mov eax, dwNewCapacity
+        mov eax, dwSize
         imul eax, sizeof DWORD
         invoke crt_malloc, eax
         .IF eax == 0
             ret
         .ENDIF
         mov [ebx].pData, eax
-        mov eax, dwNewCapacity
+        mov eax, dwSize
         mov [ebx].dwSize, eax
         mov [ebx].dwCapacity, eax
-    .ELSE
-        invoke _Vector__max_reallocate, pThis, dwNewCapacity
+    .ELSEIF [ebx].dwSize != ecx                                     ; arr.size != requested_size
+        invoke _Vector__max_reallocate, pThis, dwSize
+    .ENDIF
+    
+    assume ebx:nothing
+    ret
+Vector__resize ENDP
+
+Vector__reserve PROC uses ebx ecx, pThis: ptr Vector, dwNewCapacity: DWORD
+    mov ebx, pThis
+    assume ebx: ptr Vector
+    mov ecx, dwNewCapacity
+    .IF ebx != 0 && [ebx].dwSize < ecx
+        invoke Vector__resize, pThis, dwNewCapacity
     .ENDIF
     
     assume ebx:nothing
     ret
 Vector__reserve ENDP
 
-Vector_capacity PROC pThis: ptr Vector
+Vector__capacity PROC pThis: ptr Vector
     mov eax, pThis
     assume eax: ptr Vector
     
@@ -176,7 +189,19 @@ Vector_capacity PROC pThis: ptr Vector
     
     assume eax:nothing
     ret
-Vector_capacity ENDP
+Vector__capacity ENDP
+
+Vector__clear PROC uses ebx, pThis: ptr Vector
+    mov ebx, pThis
+    assume ebx: ptr Vector
+    mov ebx, [ebx].pData
+    .IF ebx == 0
+        ret
+    .ENDIF
+    assume ebx:nothing
+    invoke crt_free, ebx
+    ret
+Vector__clear ENDP
 
 Vector__push_back PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
     mov ebx, pThis
@@ -244,24 +269,12 @@ Vector__is_eq PROC uses ebx ecx edx esi edi, pThis: ptr Vector, pVec: ptr Vector
     ret
 Vector__is_eq ENDP
 
-Vector__free PROC uses ebx, pThis: ptr Vector
-    mov ebx, pThis
-    assume ebx: ptr Vector
-    mov ebx, [ebx].pData
-    .IF ebx == 0
-        ret
-    .ENDIF
-    assume ebx:nothing
-    invoke crt_free, ebx
-    ret
-Vector__free ENDP
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public methods with public functions   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-_Vector_New_constructor_base_start MACRO 
+_Vector_New_constructor_base_start MACRO
     invoke _Vector__constructor_base
     .IF eax == 0
         ret
@@ -377,9 +390,8 @@ Vector_Free PROC uses ebx, pThis: ptr Vector
         ret
     .ENDIF
     assume ebx: ptr Vector
-    
-    mov eax, [ebx].pVTable
-    invoke Vector_free_t PTR [eax + VectorVTable.free], ebx
+
+    invoke Vector__clear, ebx
     invoke crt_free, ebx
     
     assume ebx:nothing
