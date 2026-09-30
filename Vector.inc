@@ -21,6 +21,8 @@ Vector_resize_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_reserve_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_capacity_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_clear_t TYPEDEF PROTO STDCALL : ptr Vector
+Vector_insert_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD, : DWORD
+Vector_erase_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_push_back_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
 Vector_is_eq_t TYPEDEF PROTO STDCALL : ptr Vector, : ptr Vector
 
@@ -33,8 +35,8 @@ VectorVTable STRUCT
     reserve DWORD ?
     capacity DWORD ?
     clear DWORD ?
-    ;insert DWORD ?
-    ;erase DWORD ?
+    insert DWORD ?
+    erase DWORD ?
     push_back DWORD ?
     is_eq DWORD ?
 VectorVTable ENDS

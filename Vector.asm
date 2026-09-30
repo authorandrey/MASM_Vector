@@ -7,7 +7,7 @@ include .\Vector.inc
 
 .data
     PUBLIC Vector_vt
-    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector__resize, Vector__reserve, Vector__capacity, Vector__clear, Vector__push_back, Vector__is_eq>
+    Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector__resize, Vector__reserve, Vector__capacity, Vector__clear, Vector__insert, Vector__erase, Vector__push_back, Vector__is_eq>
     VECTOR_MAX_SIZE DWORD 0FFFFFFFFh
 
 .code
@@ -202,6 +202,57 @@ Vector__clear PROC uses ebx, pThis: ptr Vector
     invoke crt_free, ebx
     ret
 Vector__clear ENDP
+
+Vector__insert PROC uses ebx ecx edx edi, pThis: ptr Vector, dwIndex: DWORD, dwData: DWORD
+    mov ebx, pThis
+    assume ebx: ptr Vector
+    
+    mov ecx, dwIndex
+    .IF [ebx].dwSize > ecx
+        ; If overflows on append
+        mov edx, [ebx].dwCapacity
+        .IF [ebx].dwSize >= edx
+            inc edx
+            invoke _Vector__max_reallocate, pThis, edx
+        .ENDIF
+    
+        mov edx, dwData
+        mov edi, [ebx].pData
+        mov eax, [edi + ecx * (sizeof DWORD)]
+        mov DWORD ptr [edi + ecx * (sizeof DWORD)], edx
+        .REPEAT
+            inc ecx
+            mov edx, [edi + ecx * (sizeof DWORD)]
+            mov DWORD ptr [edi + ecx * (sizeof DWORD)], eax
+            mov eax, edx
+        .UNTIL [ebx].dwSize == ecx
+        inc [ebx].dwSize
+    .ENDIF
+    
+    assume ebx:nothing
+    ret
+Vector__insert ENDP
+
+Vector__erase PROC uses ebx ecx edx, pThis: ptr Vector, dwIndex: DWORD
+    mov ebx, pThis
+    assume ebx: ptr Vector
+    
+    mov ecx, dwIndex
+    .IF [ebx].dwSize > ecx
+        mov edx, [ebx].pData
+        .REPEAT
+            inc ecx
+            mov eax, [edx + ecx * (sizeof DWORD)]
+            dec ecx
+            mov DWORD ptr [edx + ecx * (sizeof DWORD)], eax
+            inc ecx
+        .UNTIL [ebx].dwSize == ecx
+        dec [ebx].dwSize
+    .ENDIF
+    
+    assume ebx:nothing
+    ret
+Vector__erase ENDP
 
 Vector__push_back PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
     mov ebx, pThis
